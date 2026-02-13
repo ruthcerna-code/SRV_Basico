@@ -1,0 +1,127 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRV Métricas TI | Enterprise Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'srv-navy': '#0A0045',
+              'srv-cyan': '#19E3CF',
+              'srv-light': '#E6E6F0',
+              'srv-yellow': '#D6B85C',
+              'srv-orange': '#D3543A',
+              'srv-purple': '#4B3F8F',
+              'srv-cell': '#11115a',
+              'srv-cell-hover': '#16166e'
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+        body { 
+          font-family: 'Inter', sans-serif;
+          background-color: #0A0045;
+          color: #E6E6F0;
+          overflow-x: hidden;
+        }
+
+        /* Hero specific styles */
+        .hero-title span {
+          color: #19E3CF;
+          font-weight: 700;
+        }
+
+        /* Decorative shapes as requested */
+        .shape-decor {
+          position: fixed;
+          z-index: -1;
+          pointer-events: none;
+        }
+        .shape-yellow {
+          background: #D6B85C;
+          width: 280px;
+          height: 800px;
+          left: 12%;
+          top: -10%;
+          transform: rotate(20deg);
+          opacity: 0.08;
+        }
+        .shape-orange {
+          background: #D3543A;
+          width: 400px;
+          height: 400px;
+          right: -5%;
+          bottom: -5%;
+          border-radius: 50%;
+          opacity: 0.05;
+        }
+        .shape-purple {
+          background: #4B3F8F;
+          width: 600px;
+          height: 600px;
+          right: 15%;
+          top: -15%;
+          transform: rotate(-15deg);
+          opacity: 0.12;
+        }
+
+        /* Specific Table Specification */
+        .table-registros {
+          width: 100%;
+          border-collapse: collapse;
+        }
+        .table-registros th, .table-registros td {
+          padding: 12px 14px;
+          text-align: center;
+          border: 1.5px solid #4B3F8F; /* Using purple as primary border color */
+        }
+        .table-registros th {
+          background-color: #0A0045;
+          color: #fff;
+          font-weight: 600;
+          text-transform: uppercase;
+          font-size: 0.75rem;
+          letter-spacing: 0.1em;
+        }
+        .table-registros td {
+          background-color: #11115a;
+          color: #E6E6F0;
+          font-size: 0.875rem;
+        }
+        .table-registros tr:hover td {
+          background-color: #16166e;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0A0045; }
+        ::-webkit-scrollbar-thumb { background: #4B3F8F; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #19E3CF; }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "lucide-react": "https://esm.sh/lucide-react@^0.564.0",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "react": "https://esm.sh/react@^19.2.4",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.95.3"
+  }
+}
+</script>
+</head>
+<body class="min-h-screen">
+    <div class="shape-decor shape-yellow"></div>
+    <div class="shape-decor shape-orange"></div>
+    <div class="shape-decor shape-purple"></div>
+    <div id="root"></div>
+</body>
+</html>

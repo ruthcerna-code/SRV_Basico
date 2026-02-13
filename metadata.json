@@ -1,0 +1,5 @@
+{
+  "name": "SRV Métricas TI - Planner",
+  "description": "Enterprise-grade IT Metrics planning and tracking system with Supabase backend and Edge Function validations.",
+  "requestFramePermissions": []
+}
