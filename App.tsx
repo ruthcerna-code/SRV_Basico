@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { 
   Save, 
@@ -11,9 +11,10 @@ import {
   CheckCircle2,
   PlusCircle,
   Trash2,
-  AlertCircle
+  AlertCircle,
+  Activity
 } from 'lucide-react';
-import { Area, SRVSummary, SummaryObjective, Profile } from './types';
+import { Area, SRVSummary, SummaryObjective } from './types';
 
 // Supabase client initialization (placeholder keys)
 const SUPABASE_URL = 'https://your-project.supabase.co';
@@ -31,8 +32,8 @@ const EXAMPLE_AREAS: Area[] = [
 const INITIAL_MOCK: Record<string, SummaryObjective[]> = {
   'area-infra': [
     { id: 'obj-1', name: 'Disponibilidad de Servicios Críticos', annual_weight: 40.0, plan: Array(12).fill(99.9), exec: Array(12).fill(99.9), compliance: 100, status: 'green' },
-    { id: 'obj-2', name: 'Resolución de Incidencias P1 < 4h', annual_weight: 30.0, plan: Array(12).fill(100.0), exec: Array(12).fill(90.0), compliance: 90, status: 'yellow' },
-    { id: 'obj-3', name: 'Eficiencia Presupuestaria CAPEX', annual_weight: 30.0, plan: Array(12).fill(50.0), exec: Array(12).fill(35.0), compliance: 70, status: 'red' }
+    { id: 'obj-2', name: 'Resolución de Incidencias P1 < 4h', annual_weight: 30.0, plan: Array(12).fill(100.0), exec: [100, 95, 88, 92, 90, 85, 80, 82, 88, 90, 0, 0], compliance: 89.2, status: 'yellow' },
+    { id: 'obj-3', name: 'Eficiencia Presupuestaria CAPEX', annual_weight: 30.0, plan: [50, 50, 85, 50, 50, 95, 50, 50, 85, 50, 70, 90], exec: [45, 48, 82, 40, 35, 88, 30, 42, 81, 45, 0, 0], compliance: 76.4, status: 'red' }
   ]
 };
 
@@ -40,6 +41,7 @@ const INITIAL_MOCK: Record<string, SummaryObjective[]> = {
 const formatValue = (val: number) => val.toFixed(1);
 
 // --- Components ---
+
 const StatusBadge = ({ status, compliance }: { status: string, compliance: number }) => {
   const styles = {
     green: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40',
@@ -65,6 +67,66 @@ const MonthInput = ({ value, onChange }: { value: number, onChange: (v: number) 
   />
 );
 
+/**
+ * Custom SVG Chart to visualize performance behavior
+ */
+const PerformanceChart = ({ planData, execData }: { planData: number[], execData: number[] }) => {
+  const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  const maxVal = Math.max(...planData, ...execData, 1) * 1.2;
+  const height = 200;
+  const width = 800;
+  const padding = 40;
+
+  const getX = (i: number) => padding + (i * (width - padding * 2) / (months.length - 1));
+  const getY = (v: number) => height - padding - (v / maxVal * (height - padding * 2));
+
+  const planPath = planData.map((v, i) => `${i === 0 ? 'M' : 'L'} ${getX(i)} ${getY(v)}`).join(' ');
+  const execPath = execData.map((v, i) => `${i === 0 ? 'M' : 'L'} ${getX(i)} ${getY(v)}`).join(' ');
+
+  return (
+    <div className="w-full overflow-x-auto bg-srv-navy/40 p-6 rounded-[40px] border border-srv-purple/30 backdrop-blur-xl">
+      <div className="flex items-center justify-between mb-8 px-4">
+        <h3 className="text-xl font-bold flex items-center gap-3">
+          <Activity className="text-srv-cyan w-6 h-6" /> Comportamiento Plan vs Entrega
+        </h3>
+        <div className="flex gap-6 text-[10px] font-black uppercase tracking-widest">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-srv-purple border border-srv-purple/50"></div>
+            <span className="opacity-60 text-srv-light">Planificado</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-srv-cyan shadow-lg shadow-srv-cyan/30"></div>
+            <span className="text-srv-cyan">Entregado</span>
+          </div>
+        </div>
+      </div>
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto min-w-[600px]">
+        {/* Grid Lines */}
+        {[0, 0.25, 0.5, 0.75, 1].map((p, i) => (
+          <line 
+            key={i} 
+            x1={padding} y1={getY(maxVal * p / 1.2)} 
+            x2={width - padding} y2={getY(maxVal * p / 1.2)} 
+            stroke="#4B3F8F" strokeOpacity="0.1" 
+          />
+        ))}
+        {/* Plan Path */}
+        <path d={planPath} fill="none" stroke="#4B3F8F" strokeWidth="2" strokeDasharray="4 4" />
+        {/* Exec Path */}
+        <path d={execPath} fill="none" stroke="#19E3CF" strokeWidth="3" className="drop-shadow-[0_0_8px_rgba(25,227,207,0.4)]" />
+        {/* Points and Labels */}
+        {months.map((m, i) => (
+          <g key={m}>
+            <text x={getX(i)} y={height - 10} textAnchor="middle" fill="#E6E6F0" opacity="0.4" fontSize="10" fontWeight="bold">{m}</text>
+            <circle cx={getX(i)} cy={getY(planData[i])} r="3" fill="#4B3F8F" />
+            <circle cx={getX(i)} cy={getY(execData[i])} r="4" fill="#19E3CF" />
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+};
+
 const Dashboard = () => {
   const [selectedArea, setSelectedArea] = useState('area-infra');
   const [selectedYear, setSelectedYear] = useState(2025);
@@ -78,10 +140,6 @@ const Dashboard = () => {
     setLoading(true);
     setErrorMsg(null);
     try {
-      // In a real app: call edge function srv-summary
-      // const { data } = await supabase.functions.invoke('srv-summary', { queryParams: { area_id: selectedArea, year: selectedYear } });
-      
-      // Simulation:
       await new Promise(r => setTimeout(r, 600));
       const objectives = INITIAL_MOCK[selectedArea] || [];
       setSummary({ objectives: JSON.parse(JSON.stringify(objectives)) });
@@ -155,20 +213,15 @@ const Dashboard = () => {
 
   const handleSaveAll = async () => {
     if (!summary) return;
-    
-    // Validation: Weight Sum
     const totalWeight = summary.objectives.reduce((sum, o) => sum + o.annual_weight, 0);
     if (Math.abs(totalWeight - 100) > 0.01) {
       setErrorMsg(`Error de Validación: La suma de los pesos es ${totalWeight.toFixed(1)}%. Debe ser exactamente 100.0%.`);
       return;
     }
-
     setSaving(true);
     setErrorMsg(null);
     try {
-      // Simulation of Edge Function Calls
       await new Promise(r => setTimeout(r, 1000));
-      // await supabase.functions.invoke('srv-upsert-objectives', { body: { area_id: selectedArea, year: selectedYear, objectives: summary.objectives } });
       alert("Gestión guardada exitosamente en el sistema SRV.");
     } catch (e: any) {
       setErrorMsg(e.message || "Error al conectar con el servidor.");
@@ -176,6 +229,18 @@ const Dashboard = () => {
       setSaving(false);
     }
   };
+
+  // Aggregated Monthly Totals for Chart
+  const aggregatedData = useMemo(() => {
+    if (!summary) return { plan: Array(12).fill(0), exec: Array(12).fill(0) };
+    const plan = Array(12).fill(0);
+    const exec = Array(12).fill(0);
+    summary.objectives.forEach(obj => {
+      obj.plan.forEach((v, i) => plan[i] += v);
+      obj.exec.forEach((v, i) => exec[i] += v);
+    });
+    return { plan, exec };
+  }, [summary]);
 
   const totalWeight = summary?.objectives.reduce((s,o) => s + o.annual_weight, 0) || 0;
 
@@ -247,7 +312,7 @@ const Dashboard = () => {
 
       {summary && (
         <>
-          {/* B) Objectives List */}
+          {/* B) Objectives Configuration */}
           <section className="bg-srv-navy/60 border border-srv-purple/30 rounded-[40px] overflow-hidden backdrop-blur-xl shadow-2xl">
             <div className="p-8 bg-srv-purple/20 border-b border-srv-purple/20 flex justify-between items-center">
               <h2 className="text-2xl font-bold flex items-center gap-4">
@@ -282,7 +347,7 @@ const Dashboard = () => {
                 <tbody>
                   {summary.objectives.length === 0 && (
                     <tr>
-                      <td colSpan={3} className="py-12 opacity-40 italic">No hay objetivos registrados para esta área/año. Comience agregando uno nuevo.</td>
+                      <td colSpan={3} className="py-12 opacity-40 italic">No hay objetivos registrados.</td>
                     </tr>
                   )}
                   {summary.objectives.map((obj) => (
@@ -349,7 +414,6 @@ const Dashboard = () => {
                     </button>
                   </div>
                 </div>
-                
                 <div className="overflow-x-auto p-6">
                   <table className="table-registros">
                     <thead>
@@ -383,6 +447,12 @@ const Dashboard = () => {
             ))}
           </div>
 
+          {/* PERFORMANCE CHART - Behavior Visualization */}
+          <section className="space-y-8">
+            <h2 className="text-3xl font-black uppercase tracking-[0.2em] text-srv-cyan border-l-4 border-srv-cyan pl-6">Visualización de Rendimiento</h2>
+            <PerformanceChart planData={aggregatedData.plan} execData={aggregatedData.exec} />
+          </section>
+
           {/* E) Results Summary Footer */}
           <section className="bg-srv-cyan text-srv-navy p-16 rounded-[50px] shadow-3xl relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-80 h-80 bg-srv-navy/5 rounded-full -mr-32 -mt-32 transition-transform duration-700 group-hover:scale-125"></div>
@@ -414,11 +484,11 @@ const Dashboard = () => {
                     <p className="text-sm font-bold uppercase tracking-[0.2em] opacity-60">Meta Alcanzada</p>
                   </div>
                 </div>
-                <p className="text-xs font-bold italic opacity-40">Métricas actualizadas hoy.</p>
+                <p className="text-xs font-bold italic opacity-40">Métricas en tiempo real.</p>
               </div>
 
               <div className="space-y-6">
-                <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-60">Dashboard Operativo</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-60">Contexto Operativo</p>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center bg-srv-navy/5 p-5 rounded-2xl border border-srv-navy/10">
                     <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Área</span>
